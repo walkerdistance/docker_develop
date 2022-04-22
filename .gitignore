@@ -1,3 +1,4 @@
-./.idea
+/.idea
 .env
-nginx/config/conf.d
+/nginx/config/conf.d
+/nginx/logs
