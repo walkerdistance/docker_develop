@@ -1,0 +1,66 @@
+version: "3"
+services:
+  nginx:
+    container_name: develop_nginx
+    hostname: develop_nginx
+    image: nginx
+    volumes:
+      - ${NGINX_VOLUMES_LOGS}:/var/log/nginx # NGINX LOG 文件
+      - ${NGINX_VOLUMES_CONFIG}:/etc/nginx/nginx.conf # NGINX 配置文件
+      - ./nginx/config/conf.d:/etc/nginx/conf.d # NGINX 项目配置文件
+      - ${PHP_VOLUMES_PROJECT}:/var/www:cached # 工作目录
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - backend
+  php-fpm72:
+    container_name: develop_php_fpm72
+    hostname: develop_php_fpm72
+    build: php-fpm72/build
+    volumes:
+      - ${PHP_VOLUMES_PROJECT}:/var/www:cached
+      - ${PHP_VOLUMES_INI}:/usr/local/etc/php/php.ini
+    depends_on:
+      - nginx
+      - redis
+      - mysql
+    ports:
+      - 9000:9000
+    networks:
+      - backend
+  mysql:
+    container_name: develop_mysql
+    hostname: develop_mysql
+    image: mysql:5.7.37
+    volumes:
+      - ${MYSQL_VOLUMES_DATA}:/var/lib/mysql
+      - ${MYSQL_VOLUMES_CONFIG}:/etc/mysql/mysql.cnf
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - 3306:3306
+    networks:
+      - backend
+  redis:
+    container_name: develop_redis
+    hostname: develop_redis
+    image: redis
+    volumes:
+      - ${REDIS_VOLUMES_DATA}:/data
+      - ./redis/config/redis.conf:/etc/redis/redis.conf
+    tty: true
+    sysctls:
+      - net.core.somaxconn=2048
+    networks:
+      - backend
+    ports:
+      - "6379:6379"
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+    command: redis-server /etc/redis/redis.conf --requirepass root && appendonly yes
+networks:
+  backend:
+    driver: bridge
